@@ -26,3 +26,4 @@ asyncpg = "^0.30.0"
 alembic = {extras = ["asyncio"], version = "^1.17.0"}
 bcrypt = "^5.0.0"
 pydantic = {extras = ["email"], version = "^2.12.3"}
+pyjwt = "^2.10.1"
