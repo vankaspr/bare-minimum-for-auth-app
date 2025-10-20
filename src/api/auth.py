@@ -7,6 +7,8 @@ from core.database.schemas.user import UserCreate, UserLogin
 from core.database import db_helper
 from core.services.user import UserService
 
+from utilities.access_token import create_access_token
+
 from core.config import settings
 
 router = APIRouter(
@@ -38,8 +40,12 @@ async def login(
     user_service = UserService(session=session)
     user = await user_service.authenticate(login_data.login, login_data.password)
     
+    access_token = create_access_token(data={"sub": user.id})
+    
     return {
         "message": "Login successful 🙂‍↕️🤌",
+        "access_token": access_token,
+        "token_type": "bearer",
         "user_id": user.id,
     }
 
