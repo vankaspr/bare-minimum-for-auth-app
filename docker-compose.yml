@@ -1,0 +1,32 @@
+services:
+  pg:
+    image: postgres
+    container_name: pg_audio
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    
+
+  mail:
+    image: maildev/maildev
+    container_name: maildev
+    environment:
+      - TZ=Europe/Moscow
+      - MAIL_DEV_PORT=1080
+      - MAIL_DEV_SMTP_PORT=1025
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+
+volumes:
+  postgres_data:
