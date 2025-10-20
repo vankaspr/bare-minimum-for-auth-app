@@ -4,6 +4,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+class ApiPrefix(BaseModel):
+    prefix: str = "/api"
+    auth: str = "/auth"
+
 class DatabaseConfig(BaseModel):
     url: PostgresDsn
     echo_pool: bool = False
@@ -19,5 +23,6 @@ class Settings(BaseSettings):
     )
     
     db: DatabaseConfig
+    api: ApiPrefix = ApiPrefix()
 
 settings = Settings()
