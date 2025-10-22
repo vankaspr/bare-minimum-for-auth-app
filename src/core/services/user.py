@@ -1,12 +1,24 @@
 import secrets
 import logging
-from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, status 
+from typing import Optional
+from datetime import (
+    datetime, 
+    timedelta, 
+    timezone,
+    )
+from fastapi import (
+    HTTPException, 
+    status, 
+    Request, 
+    BackgroundTasks,
+    )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from core.database.schemas.user import UserCreate
 from core.database.models import User
 from utilities.security import hash_password, verify_password
+from core.mailing.send_email_after_verify import send_answer_after_verify
+from core.mailing.send_email_to_verify import send_verification_email
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,8 +26,13 @@ logger = logging.getLogger(__name__)
 verification_tokens = {}
         
 class UserService:
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self, 
+        session: AsyncSession,
+        background_task: Optional[BackgroundTasks] = None
+    ):
         self.session = session
+        self.background_task = background_task
         
     async def create_user(
         self,
@@ -54,15 +71,15 @@ class UserService:
         
         # send verification email
         verification_token = await self.generate_verification_token(user.id)
-        verify_url = f"http://localhost:8000/api/auth/verify-email?token={verification_token}"
+        
+        await self.after_request_verify(user=user, token=verification_token)
 
         logger.info(
             """
             📧 Verification email sent to %r:
             Token: %r
-            URL: %r
             """, 
-            user.email, verification_token, verify_url
+            user.email, verification_token
         )
         return user
     
@@ -185,6 +202,54 @@ class UserService:
         user.is_verified = True
         await self.session.commit()
         
+        # sending confirm email about verification:
+        await self.after_verify(user=user)
+        
         del verification_tokens[token]
         
         return user
+    
+    async def after_request_verify(
+        self,
+        user: User,
+        token: str,
+        request: Optional[Request] = None,
+    ):
+        
+        """ 
+        Generates a verification link and 
+        sends an email to the user as a background task.
+        """
+        
+        verification_link = f"http://localhost:8000/api/auth/verify-email?token={token}"
+        
+        self.background_task.add_task(
+            send_verification_email,
+            user=user,
+            verification_link=verification_link
+        )
+        
+        logger.info(
+            """
+            🫴 Email was send with link:
+            %r
+            to user: %r
+            """, 
+            verification_link, user.username
+        )
+        
+    
+    async def after_verify(
+        self,
+        user: User,
+        request: Optional[Request] = None
+    ):
+        """ 
+        Sends the user a verification confirmation email.
+        """
+        self.background_task.add_task(
+            send_answer_after_verify,
+            user=user,
+        )
+    
+    
