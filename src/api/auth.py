@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends
-from fastapi import HTTPException, status
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database.schemas.user import UserCreate, UserLogin
+from core.database.schemas.user import UserCreate, UserLogin, VerifyEmail
 from core.database import db_helper
 from core.services.user import UserService
 
@@ -24,6 +23,9 @@ async def register(
         Depends(db_helper.session_getter)
     ]
 ):
+    """
+    Registrate new user and send verification token to email.
+    """
     user_service = UserService(session=session)
     user = await user_service.create_user(user_data=user_data)
     return user 
@@ -49,3 +51,23 @@ async def login(
         "user_id": user.id,
     }
 
+
+@router.post("/verify-email")
+async def verify_email(
+    request: VerifyEmail,
+    session: Annotated[
+        AsyncSession,
+        Depends(db_helper.session_getter)
+    ]
+):
+    user_service = UserService(session=session)
+    await user_service.verify_email_token(request.token)
+    
+    return {
+        "message": "Email verified successfully 🏆",
+    }
+    
+
+@router.post("/logout")
+async def logout():
+    pass
