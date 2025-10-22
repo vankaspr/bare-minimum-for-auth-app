@@ -13,7 +13,7 @@ services:
 
   mail:
     image: maildev/maildev
-    container_name: maildev
+    container_name: mail-dev
     environment:
       - TZ=Europe/Moscow
       - MAIL_DEV_PORT=1080
