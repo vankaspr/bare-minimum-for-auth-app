@@ -1,9 +1,11 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel, PostgresDsn
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 class AccessToken(BaseModel):
     secret_key: str
