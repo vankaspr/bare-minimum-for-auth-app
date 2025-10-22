@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database.schemas.user import UserCreate, UserLogin, VerifyEmail
 from core.database import db_helper
 from core.services.user import UserService
+from core.dependency.services import get_user_service
 
 from utilities.access_token import create_access_token
 
@@ -18,15 +19,15 @@ router = APIRouter(
 @router.post("/register")
 async def register(
     user_data: UserCreate,
-    session: Annotated[
-        AsyncSession,
-        Depends(db_helper.session_getter)
-    ]
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
 ):
     """
     Registrate new user and send verification token to email.
     """
-    user_service = UserService(session=session)
+    
     user = await user_service.create_user(user_data=user_data)
     return user 
 
@@ -34,12 +35,11 @@ async def register(
 @router.post("/login")
 async def login(
     login_data: UserLogin,
-    session: Annotated[
-        AsyncSession,
-        Depends(db_helper.session_getter)
-    ]
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
 ):
-    user_service = UserService(session=session)
     user = await user_service.authenticate(login_data.login, login_data.password)
     
     access_token = create_access_token(data={"sub": user.id})
@@ -55,12 +55,11 @@ async def login(
 @router.post("/verify-email")
 async def verify_email(
     request: VerifyEmail,
-    session: Annotated[
-        AsyncSession,
-        Depends(db_helper.session_getter)
-    ]
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
 ):
-    user_service = UserService(session=session)
     await user_service.verify_email_token(request.token)
     
     return {
@@ -70,4 +69,12 @@ async def verify_email(
 
 @router.post("/logout")
 async def logout():
+    pass
+
+@router.post("/forgot-password")
+async def forgot_password():
+    pass
+
+@router.post("/reset-password")
+async def reset_password():
     pass
