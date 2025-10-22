@@ -33,7 +33,7 @@ async def get_current_user(
         raise credentials_exception
     
     try:
-        user_id = int(user_id_str)  # ← конвертируем обратно в int
+        user_id = int(user_id_str)
     except ValueError:
         raise credentials_exception
     
