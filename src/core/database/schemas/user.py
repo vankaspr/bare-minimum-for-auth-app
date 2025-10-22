@@ -25,5 +25,9 @@ class UserResponse(UserBase):
     
     model_config = ConfigDict(from_attributes=True,)
     
+    
+class VerifyEmail(BaseModel):
+    token: str
+    
 class UserAdminResponse(UserResponse):
     pass
