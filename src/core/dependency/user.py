@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database.models import User
 from core.database import db_helper
-from utilities.access_token import verify_token
+from utilities.jwt_token import verify_token
 from core.services.user import UserService
 from .transport import security
 
@@ -24,7 +24,7 @@ async def get_current_user(
         detail="Could not validate credentials",
     )
     
-    payload = verify_token(token.credentials)
+    payload = verify_token(token.credentials, expected_type="access_token")
     if not payload:
         raise credentials_exception
     
