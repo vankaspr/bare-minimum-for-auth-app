@@ -13,15 +13,14 @@ async def send_verification_email(
     plain_content = dedent(
         f"""\
         Dear {recipient},
-        Please follow the libk to verify your email:
+        
+        Please follow the link to verify your email:
         {verification_link}
         
         Your site admin,
         ©️ 2025.
         """
     )
-    
-    # html format:
     
     template = templates.get_template(
         "mailing/email-verifying/before_verify.html"
