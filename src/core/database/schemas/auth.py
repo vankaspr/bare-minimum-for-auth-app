@@ -3,7 +3,9 @@ from pydantic import BaseModel, EmailStr
 class VerifyEmail(BaseModel):
     token: str
     
-
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+    
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
     
@@ -11,3 +13,4 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     password: str
+    
