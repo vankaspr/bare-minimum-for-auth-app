@@ -1,13 +1,19 @@
+from exceptions import auth
 from fastapi import APIRouter, Depends
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database.schemas.user import UserCreate, UserLogin, VerifyEmail
+from core.database.schemas.user import UserCreate, UserLogin
+from core.database.schemas.auth import (
+    VerifyEmail,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    )
 from core.database import db_helper
 from core.services.user import UserService
 from core.dependency.services import get_user_service
 
-from utilities.access_token import create_access_token
+from utilities.jwt_token import create_jwt_token
 
 from core.config import settings
 
@@ -41,9 +47,11 @@ async def login(
     ],
 ):
     user = await user_service.authenticate(login_data.login, login_data.password)
-    
-    access_token = create_access_token(data={"sub": user.id})
-    
+    access_token = create_jwt_token(data={
+        "sub": user.id,
+        "type": "access_token",
+        "username": user.username,
+        })
     return {
         "message": "Login successful 🙂‍↕️🤌",
         "access_token": access_token,
@@ -67,14 +75,37 @@ async def verify_email(
     }
     
 
+# 😺 todo: create template for bridge page!!
+# todo: ando 🤏 finish other routers:
+    
+
 @router.post("/logout")
 async def logout():
     pass
 
 @router.post("/forgot-password")
-async def forgot_password():
-    pass
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    user_service: Annotated[
+        UserService, 
+        Depends(get_user_service)
+    ],
+    
+):
+    await user_service.forgot_password(request.email)
+    return {
+        "message": "Email for reset password was sent!"
+    }
 
 @router.post("/reset-password")
-async def reset_password():
-    pass
+async def reset_password(
+    request: ResetPasswordRequest,
+    user_service: Annotated[
+        UserService, 
+        Depends(get_user_service)
+        ],
+):
+    await user_service.reset_password(request.token, request.password)
+    return {
+        "message": "Password reset successfully"
+    }
