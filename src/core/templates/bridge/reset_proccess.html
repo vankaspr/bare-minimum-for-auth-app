@@ -1,0 +1,154 @@
+{% extends 'bridge/base.html' %}
+
+{% block title %}
+    Reset password
+{% endblock %}
+
+{% block main %}
+
+    <div class="d-flex flex-column align-items-center my-5">
+
+        <h3>Reset password processing...</h3>
+
+        <div
+            id="loading-indicator"
+            class="spinner-grow text-info my-3"
+            role="status"
+        
+        >
+            <span class="visually-hidden">Loading...</span>
+        </div>
+
+        <div 
+            id="missing-token-alert"
+            class="alert alert-warning d-none my-3" 
+            role="alert"
+        >
+            Missing verification token
+        </div>
+
+        <div 
+            id="missing-password"
+            class="alert alert-warning d-none my-3" 
+            role="alert"
+        >
+            Missing password
+        </div>
+
+        <div 
+            id="verification-error-alert"
+            class="alert alert-danger d-none my-3"
+            role="alert"
+        >
+            <h5>Something went wrong.</h5>
+            Sorry, we coud not verify youer e-mail address.
+        </div>
+
+        <div 
+            id="successfully-alert" 
+            class="alert alert-success d-none my-3" 
+            role="alert">
+            <h5>Verification was successfully!</h5>
+            You can change your password.
+        </div>
+
+        <div class="d-none my-5" id="form-container">
+            <form id="passwordForm">
+                <label 
+                    for="InputPassword" 
+                    class="form-label"
+                >
+                Create new password:
+                </label>
+
+                <input 
+                    type="password" 
+                    class="form-control" 
+                    id="InputPassword"
+                >
+
+                <button 
+                    type="button" 
+                    class="btn btn-info my-3"
+                >
+                Confirm
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const passwordInput = document.getElementById('InputPassword');
+        const submitButton = document.querySelector('button');
+        const formContainer = document.getElementById("form-container");
+
+        if (!loadingIndicator || !passwordInput || !submitButton || !formContainer) {
+            console.error('One or more DOM elements not found');
+            return;
+        }
+
+        (async () => {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get("token");
+
+            if (!token) {
+                loadingIndicator.classList.add("d-none");
+                document.getElementById('missing-token-alert').classList.remove('d-none');
+                return;
+            }
+
+
+            loadingIndicator.classList.add("d-none");
+            formContainer.classList.remove("d-none");
+
+            submitButton.addEventListener("click", async () => {
+                const password = passwordInput.value;
+
+                if (!password) {
+                    document.getElementById("missing-password").classList.remove('d-none');
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.classList.remove("btn-info");
+                submitButton.classList.add("btn-outline-info");
+                submitButton.textContent = "Processing...";
+
+                
+                const resetURL = "/api/auth/reset-password";
+                const res = await fetch(resetURL, {
+                    method: "POST",
+                    body: JSON.stringify({ token: token, password: password }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (res.ok) {
+                    document.getElementById('successfully-alert').classList.remove('d-none');
+                    document.getElementById('successfully-alert').querySelector('h5').textContent = "Password changed!";
+                    document.getElementById('successfully-alert').querySelector('p').textContent = "Your password has been updated successfully.";
+                    formContainer.classList.add("d-none"); 
+                    document.getElementById('verification-error-alert').classList.add('d-none');
+                    document.getElementById('missing-password').classList.add('d-none');
+                } else {
+                    const error = await res.json();
+                    document.getElementById('verification-error-alert').classList.remove('d-none');
+                    document.getElementById('verification-error-alert').querySelector('p').textContent = error.detail;
+                    submitButton.disabled = false;
+                    submitButton.classList.remove("btn-outline-info");
+                    submitButton.classList.add("btn-info");
+                    submitButton.textContent = "Confirm";
+                }
+            });
+        })();
+    })
+    </script>
+
+
+
+{% endblock %}
