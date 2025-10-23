@@ -1,9 +1,10 @@
 import jwt
 import logging
+from core.CONST import NOW
 
 
 from typing import Optional
-from datetime import timedelta
+from datetime import timedelta, timezone, datetime
 
 from fastapi import (
     Request, 
@@ -14,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from core.database.schemas.user import UserCreate
-from core.database.models import User
+from core.database.models import User, RefreshToken
 
 from utilities.security import hash_password, verify_password
 from utilities.jwt_token import create_jwt_token, verify_token
@@ -27,6 +28,7 @@ from core.mailing import (
     send_pasword_reset_email,
     send_answer_after_reset_password,
     )
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -316,7 +318,7 @@ class UserService:
         try:
             payload = verify_token(token=token)
             if not payload or payload.get("type") != "password_reset":
-                raise 
+                raise auth.InvalidToken
             
             user_id = int(payload.get("sub"))
             user = await self.get_user_by_id(user_id=user_id)
@@ -327,7 +329,13 @@ class UserService:
             if not user.is_active:
                 raise auth.AccountDeactivated
             
+            # change password
             user.hashed_password = hash_password(new_password)
+            
+            # delete refresh token for user 
+            await self.revoke_refresh_token(user.id)
+            
+            
             await self.session.commit()
             
             # sent email
@@ -347,3 +355,111 @@ class UserService:
         
         except jwt.InvalidTokenError:
             raise auth.InvalidToken
+        
+    
+    async def create_refresh_token(
+        self,
+        user_id: int,
+    ):
+        token_data = {
+            "sub": str(user_id),
+            "type": "refresh_token"
+        }
+        
+        expires_at = NOW + timedelta(days=30)
+
+        token = create_jwt_token(
+            token_data,
+            expires_delta=timedelta(days=30)
+        )
+        
+        refresh_token = RefreshToken(
+            user_id=user_id,
+            token=token,
+            expires_at=expires_at,
+            is_revoked=False,
+        )
+        
+        self.session.add(refresh_token)
+        await self.session.commit()
+        return token
+    
+    
+    async def verify_refresh_token(
+        self,
+        token: str,
+    ) -> dict | None:
+        """ 
+        Refresh token verification
+        """
+        
+        payload = verify_token(token=token, expected_type="refresh_token")
+        
+        if not payload or payload.get("type") != "refresh_token":
+            raise auth.InvalidToken
+        
+        return payload
+    
+    
+    async def get_valid_refresh_token(
+        self,
+        token: str,
+    ) -> RefreshToken | None:
+        """ 
+        Check valid refresh token in DB
+        Return token or None
+        """
+        stmt = select(RefreshToken).where(
+            RefreshToken.token == token,
+            RefreshToken.expires_at > NOW,
+            RefreshToken.is_revoked == False
+        )
+        
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    async def validate_refresh_token(
+        self,
+        token: str,
+    ) -> RefreshToken:
+        try:
+            # verify refresh token
+            await self.verify_refresh_token(token=token)
+            
+            # check in DB if token is revoked
+            token = await self.get_valid_refresh_token(token=token)
+            
+            return token
+        
+        except Exception as e:
+            logger.error("Error: ", e)
+            raise auth.InvalidToken
+        
+    async def revoke_refresh_token(
+        self,
+        user_id: int,
+    ):
+        """ 
+        Revoked all refresh token for user
+        """
+        
+        stmt = select(RefreshToken).where(
+            RefreshToken.user_id == user_id,
+            RefreshToken.is_revoked == False
+        )
+        
+        result = await self.session.execute(stmt)
+        tokens = result.scalars().all()
+        
+        
+        for token in tokens:
+            token.is_revoked = True
+            
+        await self.session.commit()
+        
+        logger.info(
+            """ 
+            Revoked all refresh tokens for user_id: %r
+            """,
+            user_id
+        )
