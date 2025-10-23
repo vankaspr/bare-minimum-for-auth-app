@@ -188,7 +188,7 @@ class UserService:
         """
 
         # todo: bridge link
-        verification_link = f"http://localhost:8000/api/auth/verify-email?token={token}"
+        verification_link = f"http://localhost:8000/verification-proccess?token={token}"
 
         self.background_task.add_task(
             send_verification_email,
@@ -233,6 +233,8 @@ class UserService:
             await self.session.commit()
         
             # sending confirm email about verification:
+            # TODO: ☎️ условие чтобы письмо отправлялось только один раз
+            #       несмотря на то сколько раз нажмали перезагрузить страницу
             self.background_task.add_task(
                 send_answer_after_verify,
                 user=user,
@@ -283,7 +285,7 @@ class UserService:
         )
         
         # todo: bridge link
-        reset_link = f"http://localhost:8000/api/auth/reset-password?token={reset_token}"
+        reset_link = f"http://localhost:8000/reset-proccess?token={reset_token}"
         
         # sent email
         self.background_task.add_task(
