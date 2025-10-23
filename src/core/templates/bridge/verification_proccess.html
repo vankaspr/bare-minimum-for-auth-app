@@ -1,0 +1,80 @@
+{% extends 'bridge/base.html' %}
+
+{% block title %}
+    E-mail Verification
+{% endblock %}
+
+{% block main %}
+
+    <div class="d-flex flex-column align-items-center my-5">
+
+        <h3>Verifying your e-mail</h3>
+
+        <div
+            id="loading-indicator"
+            class="spinner-grow text-info my-3"
+            role="status"
+        
+        >
+            <span class="visually-hidden">Loading...</span>
+        </div>
+
+        <div 
+            id="missing-token-alert"
+            class="alert alert-warning d-none my-3" 
+            role="alert"
+        >
+            Missing verification token
+        </div>
+
+        <div 
+            id="verification-error-alert"
+            class="alert alert-danger d-none my-3"
+            role="alert"
+        >
+            <h5>Something went wrong.</h5>
+            Sorry, we coud not verify youer e-mail address.
+        </div>
+
+        <div 
+            id="successfully-alert" 
+            class="alert alert-success d-none my-3" 
+            role="alert">
+            Verification was successfully!
+        </div>
+
+    </div>
+
+    <script>
+        const loadingIndicator =  document.getElementById('loading-indicator');
+        (async () => {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get("token");
+
+            if (!token) {
+                loadingIndicator.classList.add("d-none");
+                document.getElementById('missing-token-alert').classList.remove('d-none');
+                return;
+            }
+
+            const verificationURL = "/api/auth/verify-email";
+            const res = await fetch(verificationURL, {
+                method: "POST",
+                body: JSON.stringify({ token }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            loadingIndicator.classList.add("d-none");
+
+            if (res.ok) {
+                document.getElementById('successfully-alert').classList.remove('d-none');
+            } else {
+                document.getElementById('verification-error-alert').classList.remove('d-none');
+            }
+        }) ();
+
+    </script>
+
+{% endblock %}
