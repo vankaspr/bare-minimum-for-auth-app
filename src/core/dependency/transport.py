@@ -1,3 +1,3 @@
 from fastapi.security import HTTPBearer
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=True)
