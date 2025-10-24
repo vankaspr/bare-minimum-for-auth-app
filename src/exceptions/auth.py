@@ -11,14 +11,10 @@ class AuthExecption(HTTPException):
             detail=detail,
             )
         
-class EmailAlreadyExist(AuthExecption):
-    def __init__(self):
-        super().__init__(400, "Email already registered 🤯")
         
-        
-class UsernameAlreadyExist(AuthExecption):
-    def __init__(self):
-        super().__init__(400, "Username already registered 🤯")
+class LoginAlreadyExist(AuthExecption):
+    def __init__(self, detail):
+        super().__init__(400, detail)
         
         
 class InvalidPassword(AuthExecption):
@@ -55,3 +51,7 @@ class Unauthorized(AuthExecption):
     def __init__(self):
         super().__init__(401, "Unauthorized 😳")
     
+
+class ErrorPasswordValidation(AuthExecption):
+    def __init__(self, detail):
+        super().__init__(422, detail)
