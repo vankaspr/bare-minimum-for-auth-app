@@ -1,3 +1,4 @@
+import re
 import jwt
 import logging
 from core.CONST import NOW
@@ -53,15 +54,19 @@ class UserService:
         and sends a token to the email for email confirmation.
         """
         
-        # logic for unique email and username
+        # logic for unique email and username:
         if await self.get_user_by_email(user_data.email):
-            raise auth.EmailAlreadyExist
+            raise auth.LoginAlreadyExist("Email already exist!")
         if await self.get_user_by_username(user_data.username):
-            raise auth.UsernameAlreadyExist
-        # password hashing
+            raise auth.LoginAlreadyExist("Username already exist!")
+        
+        # password validation: 
+        await self.validate_password(user_data.password)
+        
+        # password hashing:
         hashed_password = hash_password(user_data.password)
         
-        # create user
+        # create user:
         user = User(
             email=user_data.email,
             username=user_data.username,
@@ -75,10 +80,10 @@ class UserService:
         await self.session.commit()
         await self.session.refresh(user)
         
-        # generate token 
+        # generate token:
         verification_token = await self.generate_verification_token(user.id)
         
-        # send verification email
+        # send verification email:
         await self.after_request_verify(user=user, token=verification_token)
 
         logger.info(
@@ -187,7 +192,6 @@ class UserService:
         sends an email to the user as a background task.
         """
 
-        # todo: bridge link
         verification_link = f"http://localhost:8000/verification-proccess?token={token}"
 
         self.background_task.add_task(
@@ -204,7 +208,6 @@ class UserService:
             """, 
             verification_link, user.username
         )
-    
     
     
     async def verify_email_token(
@@ -233,8 +236,6 @@ class UserService:
             await self.session.commit()
         
             # sending confirm email about verification:
-            # TODO: ☎️ условие чтобы письмо отправлялось только один раз
-            #       несмотря на то сколько раз нажмали перезагрузить страницу
             self.background_task.add_task(
                 send_answer_after_verify,
                 user=user,
@@ -248,9 +249,31 @@ class UserService:
         except jwt.InvalidTokenError:
             raise auth.InvalidToken
     
-    # todo: 🫦 create password validation (after check all auth)
-    async def validate_password():
-        pass
+    
+    async def validate_password(
+        self,
+        password: str,
+    ) -> None:
+        """ 
+        Validate password.
+        Password shoub be:
+        - at least 8 characters long
+        - not contain only digits
+        - must contain at least one uppercase letter
+        - must contain at least one digit
+        - must contain at least one special character
+        """
+        
+        if len(password) < 8:
+            raise auth.ErrorPasswordValidation("Password should be at least 8 characters long")
+        if password.isdigit():
+            raise auth.ErrorPasswordValidation("Password should not contain only digits")
+        if not re.search(r"[A-Z]", password):
+            raise auth.ErrorPasswordValidation("Password must contain at least one uppercase letter")
+        if not re.search(r"[0-9]", password):
+            raise auth.ErrorPasswordValidation("Password must contain at least one digit")
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            raise auth.ErrorPasswordValidation("Password must contain at least one special character")
     
     
     async def forgot_password(
@@ -284,7 +307,6 @@ class UserService:
             expires_delta=timedelta(minutes=5)
         )
         
-        # todo: bridge link
         reset_link = f"http://localhost:8000/reset-proccess?token={reset_token}"
         
         # sent email
@@ -316,6 +338,7 @@ class UserService:
         and hashes the new password. 
         Sends a confirmation email that the password 
         has been changed.
+        
         """
         try:
             payload = verify_token(token=token)
@@ -330,6 +353,13 @@ class UserService:
             
             if not user.is_active:
                 raise auth.AccountDeactivated
+            
+            # password validation:
+            await self.validate_password(new_password)
+            
+            # check password if new pwd equal current:
+            if verify_password(new_password, user.hashed_password):
+                raise auth.ErrorPasswordValidation("New password cannot be the same as the current password")
             
             # change password
             user.hashed_password = hash_password(new_password)

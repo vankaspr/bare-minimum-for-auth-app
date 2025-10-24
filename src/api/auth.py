@@ -84,9 +84,6 @@ async def verify_email(
     }
     
 
-# 😺 todo: create template for bridge page!!
-    
-
 @router.post("/logout")
 async def logout(
     user: Annotated[
