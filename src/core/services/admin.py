@@ -10,12 +10,14 @@ from core.CONST import NOW
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-user_service = UserService()
-
 
 class AdminService:
-    def __init__(self, session: AsyncSession,):
+    def __init__(
+        self, 
+        session: AsyncSession,
+    ):
         self.session = session
+        self.user_service = UserService(session)
         
     # ------------------- USER ACTION ------------------
 
@@ -94,7 +96,7 @@ class AdminService:
         Deactivate user by ID
         """
         
-        user = await user_service.get_user_by_id(user_id=user_id)
+        user = await self.user_service.get_user_by_id(user_id=user_id)
         if not user:
             raise ValueError(f"user with id {user_id} not found")
         
@@ -117,7 +119,7 @@ class AdminService:
         Reactivate user by ID
         """
         
-        user = await user_service.get_user_by_id(user_id=user_id)
+        user = await self.user_service.get_user_by_id(user_id=user_id)
         if not user:
             raise ValueError(f"user with id {user_id} not found")
 
@@ -141,7 +143,7 @@ class AdminService:
         Delete user 
         """
         
-        user = await user_service.get_user_by_id(user_id=user_id)
+        user = await self.user_service.get_user_by_id(user_id=user_id)
         if not user:
             raise ValueError(f"user with id {user_id} not found")
         
@@ -178,4 +180,6 @@ class AdminService:
             "active_users": stats.active,
             "verified_users": stats.verified,
         }
+    
+    
     
