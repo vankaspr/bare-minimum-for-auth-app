@@ -15,6 +15,8 @@ class AccessToken(BaseModel):
 class ApiPrefix(BaseModel):
     prefix: str = "/api"
     auth: str = "/auth"
+    user: str = "/user"
+    admin: str = "/admin"
 
 class DatabaseConfig(BaseModel):
     url: PostgresDsn
