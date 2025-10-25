@@ -25,6 +25,8 @@ class GithubOauth(BaseModel):
     client_secret: str
     redirect_uri: str = "http://localhost:8000/api/auth/github/callback"
     github_url: str = "https://github.com/login/oauth/access_token"
+    github_email_url: str = "https://api.github.com/user/emails"
+    github_user_url: str = "https://api.github.com/user"
     
 
 class ApiPrefix(BaseModel):
