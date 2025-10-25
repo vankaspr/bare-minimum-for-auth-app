@@ -172,7 +172,9 @@ class OauthService:
                 return user
             
     
-        # TODO: add handle username possible conflict 
+        username = user_data.get("login")
+        if await self.is_username_exist(username):
+            username = f"{username}_{github_id}"
         
         user = User(
             email=email or f"github_{github_id}@example.com",
@@ -199,5 +201,20 @@ class OauthService:
         return user
     
     
-    async def is_username_exist(self, uername: str):
-        pass
+    async def is_username_exist(self, username: str) -> bool:
+        """ 
+        Check if username already exist 
+        """
+        
+        stmt = select(User).where(
+            User.username == username
+        )
+        
+        result = await self.session.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        return user is not None
+        
+        
+        
+        
