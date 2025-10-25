@@ -4,6 +4,7 @@ from typing import Annotated
 from core.database import db_helper
 from core.services.user import UserService
 from core.services.admin import AdminService
+from core.services.oauth import OauthService
 
 async def get_user_service(
     background_task: BackgroundTasks,
@@ -25,3 +26,12 @@ async def get_admin_service(
     ],
 ) -> AdminService:
     return AdminService(session=session)
+
+
+async def get_oauth_service(
+    session: Annotated[
+        AsyncSession,
+        Depends(db_helper.session_getter)
+    ],   
+) -> OauthService:
+    return OauthService(session=session)
