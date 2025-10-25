@@ -12,6 +12,8 @@ router = APIRouter(
     tags=["Admin"]
 )
 
+# ------------------------ Users data and statistics --------------------
+
 @router.get("/statistic/users")
 async def statistics(
     user: Annotated[
@@ -25,7 +27,52 @@ async def statistics(
 ):
     return await admin_service.get_user_stats()
 
-# router with -> {user_id}
+
+@router.get("/statistic/users/new/{days}")
+async def statistic_of_new_users(
+    days: int,
+    user: Annotated[
+        User,
+        Depends(get_current_superuser)
+    ],
+    admin_service: Annotated[
+        AdminService,
+        Depends(get_admin_service)
+    ],
+):
+    return await admin_service.get_new_users(days=days)
+
+
+@router.get("/statistic/users/all/unverified/{days}")
+async def unverified_statistic(
+    days: int,
+    user: Annotated[
+        User,
+        Depends(get_current_superuser)
+    ],
+    admin_service: Annotated[
+        AdminService,
+        Depends(get_admin_service)
+    ],   
+):
+    return await admin_service.get_unverified_old_users(days=days)
+
+    
+@router.get("/statistic/users/all/good")
+async def all_good_users(
+    user: Annotated[
+        User,
+        Depends(get_current_superuser)
+    ],
+    admin_service: Annotated[
+        AdminService,
+        Depends(get_admin_service)
+    ],   
+):
+    return await admin_service.get_all_active_and_verified_users()
+
+
+# ------------------------- Action --------------------------------------
 
 @router.patch("/deactivate/{user_id}")
 async def deactivate(
