@@ -7,13 +7,17 @@ from fastapi import HTTPException, status
 from core.services.user import UserService
 from core.database.models import User
 from utilities.jwt_token import create_jwt_token
-
+from exceptions import auth
 from core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class OauthService:
+    """ 
+    A service for authentication using 
+    third-party services (specifically GitHub).
+    """
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_service = UserService(session)
@@ -79,10 +83,7 @@ class OauthService:
                         %r
                         """, error
                     )
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Failed to get access token"
-                    )
+                    raise auth.OauthError("Failed to get access token")
                     
                 result = await response.json()
                 return result["access_token"]
@@ -101,7 +102,7 @@ class OauthService:
         
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                url="https://api.github.com/user",
+                url=settings.oauth.github_user_url,
                 headers=headers,
             ) as response:
                 if response.status != 200:
@@ -112,16 +113,14 @@ class OauthService:
                         %r
                         """, error
                     )
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Failed to get user info"
-                    )
-                    
+                    raise auth.OauthError("Failed to get user info")
+                
                 user_data = await response.json()
+            
             
             if not user_data.get("email"):
                 async with session.get(
-                    url="https://api.github.com/user/emails",
+                    url=settings.oauth.github_email_url,
                     headers=headers,
                 ) as response:
                     if response.status == 200:
@@ -181,7 +180,7 @@ class OauthService:
             username=user_data.get("login", f"github_{github_id}"),
             is_active=True,
             hashed_password="oauth_user",
-            # GitHub already verified the email
+            # already verified 
             is_verified=True,
             is_superuser=False,
             github_id=github_id,
