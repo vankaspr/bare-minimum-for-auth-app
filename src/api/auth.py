@@ -1,5 +1,6 @@
-from exceptions import auth
-from fastapi import APIRouter, Depends
+
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import RedirectResponse
 from typing import Annotated
 
 
@@ -14,8 +15,12 @@ from core.database.schemas.auth import (
 from core.database.models import User
 
 from core.services.user import UserService
+from core.services.oauth import OauthService
 from core.dependency.services import get_user_service
 from core.dependency.user import get_current_user
+from core.dependency.services import get_oauth_service
+
+from core.oauth.github import github_auth_url
 
 from utilities.jwt_token import create_jwt_token
 
@@ -169,3 +174,33 @@ async def refresh(
         "refresh_token": refresh_token,
         "token_type": "bearer",
     }
+
+#@router.get("/github", include_in_schema=False)
+#async def login_with_github():
+#    return RedirectResponse(github_auth_url)
+
+@router.get("/github/docs")
+async def login_with_github():
+    """ 
+    Get GitHub OAuth URL
+    """
+    
+    return {
+            "message": "Visit the URL to login with GitHub",
+            "url": github_auth_url
+        }
+    
+
+@router.get("/github/callback")
+async def github_callback(
+    oauth_service: Annotated[
+        OauthService, 
+        Depends(get_oauth_service)
+    ],
+    code: str = Query(...),
+):
+    """ 
+    Handle GitHub OAuth callback
+    """
+    
+    return await oauth_service.authenticate(code)
