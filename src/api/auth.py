@@ -175,9 +175,10 @@ async def refresh(
         "token_type": "bearer",
     }
 
-#@router.get("/github", include_in_schema=False)
-#async def login_with_github():
-#    return RedirectResponse(github_auth_url)
+@router.get("/github", include_in_schema=False)
+async def login_with_github():
+    return RedirectResponse(github_auth_url)
+
 
 @router.get("/github/docs")
 async def login_with_github():
