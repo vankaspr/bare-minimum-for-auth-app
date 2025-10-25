@@ -36,6 +36,10 @@ logger = logging.getLogger(__name__)
 
         
 class UserService:
+    """ 
+    Service related to users: 
+    creation, validation, login, etc.
+    """
     def __init__(
         self, 
         session: AsyncSession,
