@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, func
+from sqlalchemy import String, Boolean, DateTime, func, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 from core.database import Base
 
@@ -25,4 +25,4 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    
+    github_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=True)
