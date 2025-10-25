@@ -60,3 +60,8 @@ class ErrorPasswordValidation(AuthExecption):
 class AccessDenied(AuthExecption):
     def __init__(self):
         super().__init__(403, "Access denied ☠️" )
+        
+
+class OauthError(AuthExecption):
+    def __init__(self, detail):
+        super().__init__(400, detail)
