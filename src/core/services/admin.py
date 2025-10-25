@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 class AdminService:
+    """ 
+    Service for the admin and all 
+    the auxiliary functions that 
+    may be needed along the way.
+    """
     def __init__(
         self, 
         session: AsyncSession,
