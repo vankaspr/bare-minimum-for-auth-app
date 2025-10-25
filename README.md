@@ -36,5 +36,6 @@ poetry install
 
 # run 
 poetry run python src/main.py
-
 ```
+
+![Lord](https://i.pinimg.com/1200x/e4/df/60/e4df60698e65fa8e378736070127ac19.jpg)
