@@ -52,7 +52,7 @@ class AdminService:
     
     async def get_unverified_old_users(
         self,
-        days_old: int = 7,
+        days: int = 7,
     ) -> list[User]:
         """ 
         Get unverified users older than N days
@@ -60,12 +60,12 @@ class AdminService:
         return list of users
         """
         
-        old_date = NOW - timedelta(days=days_old)
+        date = NOW - timedelta(days=days)
         
         stmt = select(User).where(
             User.is_verified == False,
-            User.created_at < old_date,
-        )
+            User.created_at < date,
+        ).order_by(User.created_at.desc())
         
         result = await self.session.execute(stmt)
         return result.scalars().all()
